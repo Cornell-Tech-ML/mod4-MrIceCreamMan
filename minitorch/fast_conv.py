@@ -1,6 +1,8 @@
 from typing import Tuple, TypeVar, Any
 
+import numpy as np
 from numba import njit as _njit
+from numba import prange
 
 from .autodiff import Context
 from .tensor import Tensor
@@ -85,9 +87,26 @@ def _tensor_conv1d(
     )
     s1 = input_strides
     s2 = weight_strides
+    dims = len(out_shape)
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError("Need to implement for Task 4.1")
+    all_indices = np.zeros((out_size, dims), np.int32)
+    for i in prange(out_size):
+        to_index(i, out_shape, all_indices[i])
+        batch_i, o_channel_i, o_width_i = all_indices[i]
+
+        accum = 0
+        for j in range(in_channels):
+            for k in range(kw):
+                w_width_i = o_width_i + k if not reverse else o_width_i - k
+
+                if w_width_i < 0 or w_width_i >= width:
+                    continue
+
+                in_ord = batch_i * s1[0] + j * s1[1] + w_width_i * s1[2]
+                weight_ord = o_channel_i * s2[0] + j * s2[1] + k * s2[2]
+                accum += input[in_ord] * weight[weight_ord]
+
+        out[i] = accum
 
 
 tensor_conv1d = njit(_tensor_conv1d, parallel=True)
@@ -123,6 +142,7 @@ class Conv1dFun(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Compute Derivative"""
         input, weight = ctx.saved_values
         batch, in_channels, w = input.shape
         out_channels, in_channels, kw = weight.shape
@@ -250,6 +270,7 @@ class Conv2dFun(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Compute Derivative"""
         input, weight = ctx.saved_values
         batch, in_channels, h, w = input.shape
         out_channels, in_channels, kh, kw = weight.shape
