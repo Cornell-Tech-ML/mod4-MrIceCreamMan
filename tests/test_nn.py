@@ -31,6 +31,7 @@ def test_avg(t: Tensor) -> None:
 @pytest.mark.task4_4
 @given(tensors(shape=(2, 3, 4)))
 def test_max(t: Tensor) -> None:
+    # testing forkward
     out = minitorch.max(t, 0)
     assert_close(out[0, 0, 0], max([t[i, 0, 0] for i in range(2)]))
 
@@ -39,6 +40,17 @@ def test_max(t: Tensor) -> None:
 
     out = minitorch.max(t, 2)
     assert_close(out[0, 0, 0], max([t[0, 0, i] for i in range(4)]))
+
+    # testing backward
+    minitorch.grad_check(
+        lambda a: minitorch.nn.max(a, dim=0), t + minitorch.rand(t.shape)
+    )
+    minitorch.grad_check(
+        lambda a: minitorch.nn.max(a, dim=1), t + minitorch.rand(t.shape)
+    )
+    minitorch.grad_check(
+        lambda a: minitorch.nn.max(a, dim=2), t + minitorch.rand(t.shape)
+    )
 
 
 @pytest.mark.task4_4
