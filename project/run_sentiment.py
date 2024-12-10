@@ -34,8 +34,7 @@ class Conv1d(minitorch.Module):
         self.bias = RParam(1, out_channels, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -61,15 +60,35 @@ class CNNSentimentKim(minitorch.Module):
     ):
         super().__init__()
         self.feature_map_size = feature_map_size
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+
+        self.conv1 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.conv2 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.conv3 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+        self.linear = Linear(feature_map_size, 1)
+        self.dropout = dropout
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        x = embeddings.permute(0, 2, 1)
+
+        # 1. Apply a 1d convolution with input_channels=embedding_dim
+        x1 = self.conv1.forward(x).relu()
+        x2 = self.conv2.forward(x).relu()
+        x3 = self.conv3.forward(x).relu()
+
+        # 2. Apply max-over-time across each feature map
+        x4 = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)
+
+        # 3. Apply a Linear to size C followed by a Dropout with rate 25%
+        x5 = x4.view(x4.shape[0], self.feature_map_size)
+        x6 = self.linear.forward(x5)
+        x7 = minitorch.dropout(x6, self.dropout)
+
+        # 4. Apply a sigmoid over the class dimension.
+        out = x7.sigmoid().view(x7.shape[0])
+        return out
 
 
 # Evaluation helper methods

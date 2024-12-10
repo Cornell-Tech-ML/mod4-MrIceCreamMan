@@ -41,8 +41,7 @@ class Conv2d(minitorch.Module):
         self.bias = RParam(out_channels, 1, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
 
 
 class Network(minitorch.Module):
@@ -67,12 +66,35 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        self.conv1 = Conv2d(1, 4, 3, 3)
+        self.conv2 = Conv2d(4, 8, 3, 3)
+        self.linear1 = Linear(392, 64)
+        self.linear2 = Linear(64, C)
 
     def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # 1. Apply a convolution with 4 output channels and a 3x3 kernel followed by a ReLU
+        x = self.conv1.forward(x).relu()
+        self.mid = x
+
+        # 2. Apply a convolution with 8 output channels and a 3x3 kernel followed by a ReLU
+        x = self.conv2.forward(x).relu()
+        self.out = x
+
+        # 3. Apply 2D pooling (either Avg or Max) with 4x4 kernel
+        x = minitorch.maxpool2d(x, [4, 4])
+
+        # 4. Flatten channels, height, and width.
+        x = x.view(x.shape[0], 392)
+
+        # 5. Apply a Linear to size 64 followed by a ReLU and Dropout with rate 25%
+        x = self.linear1.forward(x).relu()
+        x = minitorch.dropout(x, 0.25)
+
+        # 6. Apply a Linear to size C (number of classes)
+        x = self.linear2.forward(x)
+
+        # 7. Apply a logsoftmax over the class dimension
+        return minitorch.logsoftmax(x, 1)
 
 
 def make_mnist(start, stop):
@@ -171,4 +193,4 @@ class ImageTrain:
 
 if __name__ == "__main__":
     data_train, data_val = (make_mnist(0, 5000), make_mnist(10000, 10500))
-    ImageTrain().train(data_train, data_val, learning_rate=0.01)
+    ImageTrain().train(data_train, data_val, max_epochs=25, learning_rate=0.01)
