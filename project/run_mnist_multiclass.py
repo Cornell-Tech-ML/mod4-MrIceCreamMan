@@ -72,7 +72,7 @@ class Network(minitorch.Module):
         self.linear2 = Linear(64, C)
 
     def forward(self, x):
-        # 1. Apply a convolution with 4 output channels and a 3x3 kernel followed by a ReLU 
+        # 1. Apply a convolution with 4 output channels and a 3x3 kernel followed by a ReLU
         x = self.conv1.forward(x).relu()
         self.mid = x
 

@@ -85,7 +85,7 @@ class CNNSentimentKim(minitorch.Module):
         x5 = x4.view(x4.shape[0], self.feature_map_size)
         x6 = self.linear.forward(x5)
         x7 = minitorch.dropout(x6, self.dropout)
-        
+
         # 4. Apply a sigmoid over the class dimension.
         out = x7.sigmoid().view(x7.shape[0])
         return out
